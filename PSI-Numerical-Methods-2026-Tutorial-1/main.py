@@ -27,30 +27,50 @@ def kinetic_energy(m, v):
     energy = (gamma-1)*m*c**2
     return energy
 
-
-def lin_fun(x): 
-    m = 0.3
-    c = -1
-    return m*x + c 
-
-def linear_bisector(a, b, n):
-    if lin_fun(a) == 0:
+def linear_bisector(a, b, f, n=0, threshold=1e-5):
+    if abs(f(a)) < threshold:
         return a, n+1  
-    elif lin_fun(b) == 0: 
+    elif abs(f(b)) < threshold: 
         return b, n+1
-    elif abs(a-b) < 1e-5:
+    elif abs(a-b) < threshold:
         mid = (a+b)/2
         return mid, n+1 
-    elif lin_fun(a)*lin_fun(b) < 0: 
+    elif f(a)*f(b) < 0: 
         mid = (a+b)/2
-        if lin_fun(mid) == 0: 
+        if abs(f(mid)) < threshold: 
             return mid, n+1 
-        elif lin_fun(mid) > 0: 
-            return linear_bisector(a, mid, n+1)
+        elif f(mid) > 0: 
+            return linear_bisector(a, mid, f, n+1)
         else: 
-            return linear_bisector(mid, b, n+1)
+            return linear_bisector(mid, b, f, n+1)
 
+def newton_raphson(f, fd, x, n=0, threshold=1e-5):
+    if abs(f(x) - 0) < threshold: 
+        n +=1
+        return x, n  
+    else: 
+        x -= f(x)/fd(x)
+        n += 1 
+        return newton_raphson(f, fd, x, n)
 
+def lin_fun(x, m=0.3, c=-1): 
+    return m*x + c 
+
+def lin_fun_der(x, m=0.3, c=-1):
+    return m 
+
+def long_cubic(x): 
+    return 49*x**3 - 161*x**2 - 440*x + 1452
+
+def long_cubic_der(x): 
+    return 49*3*x**2 - 161*2*x - 440 
+
+def cubic(x):
+    return x**3 - 7*x + 2 
+
+def cubic_der(x): 
+    return 3*x**2 - 7 
+ 
 if __name__ == "__main__":
 
     ## PROBLEM 3 
@@ -105,8 +125,26 @@ if __name__ == "__main__":
     print("energy of red blood cell is ", kinetic_energy(0.1e-9, 1.02e-3/c))
 
     ## PROBLEM 5 
-    print(linear_bisector(-10, 10, 0))
-    
+    print("The correct answer to solve 0.3x-1=y is 3.333.")
+    lb_test_func_linear = linear_bisector(-10, 10, lin_fun)
+    nr_test_func_linear = newton_raphson(lin_fun, lin_fun_der, 10)
+    print("With linear bisector, we find ", lb_test_func_linear[0], " computed in ", lb_test_func_linear[1], " steps.")
+    print("With Newton-Raphson method, we find ", nr_test_func_linear[0], " computed in ", nr_test_func_linear[1], " steps.")
+
+    for t in [1e-2, 1e-4, 1e-8]: 
+        lb_test_func_cubic = linear_bisector(1, 20, cubic, n=0, threshold=t)
+        nr_test_func_cubic = newton_raphson(cubic, cubic_der, 10, n=0, threshold=t)
+
+        print("With linear bisector, we find ", lb_test_func_cubic[0], " computed in ", lb_test_func_cubic[1], f" steps when the threshold is {t}.")
+        print("With Newton-Raphson method, we find ", nr_test_func_cubic[0], " computed in ", nr_test_func_cubic[1], f" steps when the threshold is {t}.")
+
+    long_cubic_nr = newton_raphson(long_cubic, long_cubic_der, 10)
+    print("With Newton-Raphson method, we find ", long_cubic_nr[0], " computed in ", long_cubic_nr[1], f" steps.")
+    try: 
+        long_cubic_lb = linear_bisector(0, 30, long_cubic)
+        print("With linear bisector, we find ", long_cubic_lb[0], " computed in ", long_cubic_lb[1], " steps.")
+    except: 
+        print("Could not find a root with linear bisection method")
     print("e(1) with  5 terms is", myexp(1.0, 5))
     print("e(1) with 10 terms is", myexp(1.0, 10))
     print("e(1) with 20 terms is", myexp(1.0, 20))
