@@ -131,12 +131,70 @@ def main():
     plt.legend(fontsize=10)
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig('spectral_radius_distribution.png', dpi=300)
+    plt.savefig('./PSI-Numerical-Methods-2026-Tutorial-2-main/spectral_radius_distribution.png', dpi=300)
     plt.show()
 
     print("\nHistogram saved as 'spectral_radius_distribution.png'")
 
 
+def check_M():
+    M_values = np.arange(20)
+    speedups = []
+    N = 20    # Matrix size (N×N)
+
+    for pow in M_values: 
+        M = 2**pow
+        print(M)
+        start_time = time.time()
+        radii_serial = serial_computation(M, N)
+        serial_time = time.time() - start_time
+        start_time = time.time()
+        radii_parallel = parallel_computation(M, N)
+        parallel_time = time.time() - start_time
+        speedups.append(serial_time/parallel_time)
+    # print(M_values, speedups)
+    plt.figure(figsize=(10, 6))
+    plt.plot(M_values, speedups, color='red')
+    plt.xlabel('$M = 2^x$', fontsize=12)
+    plt.ylabel('Speed-up', fontsize=12)
+    plt.title(f'Distribution of Speed-ups obtained for {N}×{N} Random Matrices',
+              fontsize=14)
+    plt.legend(fontsize=10)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig('./PSI-Numerical-Methods-2026-Tutorial-2-main/M_speedup_distribution.png', dpi=300)
+    plt.show()
+
+def check_N():
+    M = 4096 
+    N_values = np.arange(1, 20)
+    speedups = []
+    # N = 20    # Matrix size (N×N)
+
+    for pow in N_values: 
+        N = 10*pow
+        start_time = time.time()
+        radii_serial = serial_computation(M, N)
+        serial_time = time.time() - start_time
+        start_time = time.time()
+        radii_parallel = parallel_computation(M, N)
+        parallel_time = time.time() - start_time
+        speedups.append(serial_time/parallel_time)
+    # print(M_values, speedups)
+    plt.figure(figsize=(10, 6))
+    plt.plot(N_values, speedups, color='red')
+    plt.xlabel('$N = 10x$', fontsize=12)
+    plt.ylabel('Speed-up', fontsize=12)
+    plt.title(f'Distribution of Speed-ups obtained for {M} Random Matrices',
+              fontsize=14)
+    plt.legend(fontsize=10)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig('./PSI-Numerical-Methods-2026-Tutorial-2-main/N_speedup_distribution.png', dpi=300)
+    plt.show()
+
+
 if __name__ == "__main__":
-    main()
+    check_M()
+    check_N()
 
