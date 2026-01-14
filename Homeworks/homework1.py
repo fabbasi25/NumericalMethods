@@ -144,13 +144,10 @@ def test_e(x):
     return np.exp(x)
 
 def test_rational(x):
-    return x**(1/3) + 1/(1+100*(x-5)**2)
+    return np.cbrt(x) + 1/(1+100*(x-5)**2)
 
 def test_abs(x): 
-    x_abs = x
-    if x<0:
-        x_abs = -x
-    return x**5*x_abs
+    return x**5*np.abs(x)
 
 def gaussian_int(a, b, func, Nsub, N, *fargs, **fkwargs):
     aj = []
@@ -175,10 +172,52 @@ def gaussian_int(a, b, func, Nsub, N, *fargs, **fkwargs):
     
     return int_result
 
-for N in range(1, 8):
-    print("N", N)
-    print(gaussian_int(0, 1, test_e, 1000, N))
-    print(np.e -1)
-
-
 # plot 
+
+def plot_int_results(a, b, test_func, correct_eval, function_str, filename):
+    colors = [
+        "#1f77b4",  # blue
+        "#ff7f0e",  # orange
+        "#2ca02c",  # green
+        "#d62728",  # red
+        "#9467bd",  # purple
+        "#8c564b",  # brown
+        "#e377c2",  # pink
+    ]
+    
+    plt.figure(figsize=(10, 6))
+
+    for N in range(1, 8):
+        int_errors_N = []
+        func_evals = []
+        for Nsub_ in range(1, 2000, 100):
+            int_result = gaussian_int(a, b, test_func, Nsub_, N)
+            int_error = abs((correct_eval - int_result)/correct_eval)
+            if int_error < 0: 
+                print(int_error)
+            int_errors_N.append(int_error)
+            func_evals.append(N*Nsub_)
+
+        plt.plot(func_evals, int_errors_N, color=colors[N-1], label=f"$N = {{{N}}}$") 
+
+
+    plt.xlabel('Function evaluations (log)', fontsize=12)
+    plt.ylabel('Error in integration', fontsize=12)
+    plt.title(f'Error in Integration for the Function {function_str}',
+                fontsize=14)
+    plt.legend(fontsize=10)
+    plt.grid(True, alpha=0.3)
+    plt.xscale("log")
+    # plt.yscale("log")
+    plt.tight_layout()
+    plt.savefig(f'./Homeworks/{filename}.png', dpi=300)
+
+
+# plotting test functions 
+correct_exp = np.e -1
+correct_rat = 1/20 * (-15 + 150 * 10**(1/3) + 2 * np.arctan(np.deg2rad(40)) + 2 * np.arctan(np.deg2rad(50)))
+correct_abs = 16384/7 - 4096*np.pi + 3072*np.pi**2 - 1280*np.pi**3 + 320*np.pi**4 - 48*np.pi**5 + 4*np.pi**6 - (2*np.pi**7)/7
+
+plot_int_results(0, 1, test_e, correct_exp, "$e^x$", "exp")
+plot_int_results(1, 10, test_rational, correct_rat, "$x^{1/3} + 1/(1 + 100 (x - 5)^2)$", "rational")
+plot_int_results(-np.pi, 4-np.pi, test_abs, correct_abs, "$x^5|x|$", "abs")
