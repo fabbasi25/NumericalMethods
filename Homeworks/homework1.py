@@ -1,3 +1,7 @@
+## Asked ChatGPT for colors for graph + how to use scatter
+## Daniel helped me debug errors in Simpsons algorithm and made me noticed 
+## there were errors in variable change 
+
 import numpy as np
 import matplotlib.pyplot as plt 
 
@@ -128,15 +132,23 @@ plt.savefig('./Homeworks/P7.png', dpi=300)
 # compute weights 
 
 def simpsons(a, b, n, f, *f_args, **f_kwargs):
-    xk = np.linspace(a, b, n)
+    if n%2 == 1: 
+        n += 1
+    xk = np.linspace(a, b, n+1)
     fk = f(xk, *f_args, **f_kwargs)
-    h = xk[1] - xk[0]
-    return h * (fk[0] + fk[1] + 4*fk[1:-1:2].sum() + 2*fk[2:-2:2].sum())/3.
+    h = (b-a)/n 
+
+    return h/3 * (fk[0] + fk[-1] + 4*fk[1:-1:2].sum() + 2*fk[2:-2:2].sum())
 
 def wk(k, x_points):
-    return simpsons(-1, 1, 100_000, phi, k, x_points)
+    return simpsons(-1, 1, 20_000, phi, k, x_points)
 
-print("Weight 1 for P7 are ", wk(1, x_points_for_P7))
+weights = []
+for N in range(1, 8):
+    sample_points = roots_of_L(N)
+    weights.append([])
+    for k in range(1, N+1):
+        weights[N-1].append(wk(k, sample_points)) 
 
 ### PROBLEM 3: INTEGRATE!
 
@@ -151,23 +163,17 @@ def test_abs(x):
 
 def gaussian_int(a, b, func, Nsub, N, *fargs, **fkwargs):
     aj = []
-    for j in range(Nsub):
-        aj.append(a + (b-a)*j/Nsub)
+    aj = np.linspace(a, b, Nsub+1, endpoint=True)
     
     int_result = 0 
     sample_points = roots_of_L(N)
-    k_values = np.arange(1, N+1)
-    weights_k = []
+    weights_k = np.array(weights[N-1], dtype=float)
 
-    for k in k_values:
-        weights_k.append(wk(k, sample_points))
-    
-    weights_k = np.array(weights_k)
-
-        
-    for j in range(Nsub-1): 
+    for j in range(Nsub): 
         # integrate from aj to aj+1
-        this_term = (aj[j+1]-aj[j]) / 2 * func(sample_points, *fargs, **fkwargs) * weights_k
+        eval_points = (aj[j+1]-aj[j]) / 2*(sample_points) + (aj[j+1]+aj[j])/2
+
+        this_term = (aj[j+1]-aj[j]) / 2 * func(eval_points, *fargs, **fkwargs) * weights_k
         int_result += np.sum(this_term)
     
     return int_result
@@ -190,11 +196,10 @@ def plot_int_results(a, b, test_func, correct_eval, function_str, filename):
     for N in range(1, 8):
         int_errors_N = []
         func_evals = []
-        for Nsub_ in range(1, 2000, 100):
+        for Nsub_ in range(2, 2000, 100):
             int_result = gaussian_int(a, b, test_func, Nsub_, N)
             int_error = abs((correct_eval - int_result)/correct_eval)
-            if int_error < 0: 
-                print(int_error)
+
             int_errors_N.append(int_error)
             func_evals.append(N*Nsub_)
 
@@ -208,14 +213,14 @@ def plot_int_results(a, b, test_func, correct_eval, function_str, filename):
     plt.legend(fontsize=10)
     plt.grid(True, alpha=0.3)
     plt.xscale("log")
-    # plt.yscale("log")
+    plt.yscale("log")
     plt.tight_layout()
     plt.savefig(f'./Homeworks/{filename}.png', dpi=300)
 
 
 # plotting test functions 
 correct_exp = np.e -1
-correct_rat = 1/20 * (-15 + 150 * 10**(1/3) + 2 * np.arctan(np.deg2rad(40)) + 2 * np.arctan(np.deg2rad(50)))
+correct_rat = 1/20 * (-15 + 150 * 10**(1/3) + 2 * np.arctan(40) + 2 * np.arctan(50))
 correct_abs = 16384/7 - 4096*np.pi + 3072*np.pi**2 - 1280*np.pi**3 + 320*np.pi**4 - 48*np.pi**5 + 4*np.pi**6 - (2*np.pi**7)/7
 
 plot_int_results(0, 1, test_e, correct_exp, "$e^x$", "exp")
