@@ -1,7 +1,3 @@
-## Asked ChatGPT for colors for graph + how to use scatter
-## Daniel helped me debug errors in Simpsons algorithm and made me noticed 
-## there were errors in variable change 
-
 import numpy as np
 import matplotlib.pyplot as plt 
 
@@ -226,3 +222,8 @@ correct_abs = 16384/7 - 4096*np.pi + 3072*np.pi**2 - 1280*np.pi**3 + 320*np.pi**
 plot_int_results(0, 1, test_e, correct_exp, "$e^x$", "exp")
 plot_int_results(1, 10, test_rational, correct_rat, "$x^{1/3} + 1/(1 + 100 (x - 5)^2)$", "rational")
 plot_int_results(-np.pi, 4-np.pi, test_abs, correct_abs, "$x^5|x|$", "abs")
+
+
+## Asked ChatGPT for colors for graph + how to use scatter
+## Daniel helped me debug errors in Simpsons algorithm and made me noticed 
+## there were errors in variable change 
