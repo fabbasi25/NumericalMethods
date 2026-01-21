@@ -1,0 +1,96 @@
+import numpy as np 
+import matplotlib.pyplot as plt 
+
+G = 6.6743015*10**(-11)
+
+def rhs(t, x_vec, m1, m2): 
+    pos_1 = x_vec[0:2]
+    vel_1 = x_vec[2:4]
+    pos_2 = x_vec[4:6]
+    vel_2 = x_vec[6:8]
+
+    dr = pos_1 - pos_2
+    r = np.linalg.norm(dr)
+    inv3 = dr/(r**3) 
+
+    acc1 = -G * m2 * inv3
+    acc2 = +G * m1 * inv3
+
+    dvdt = np.zeros_like(x_vec)
+    dvdt[0:2] = vel_1 
+    dvdt[2:4] = acc1
+    dvdt[4:6] = vel_2 
+    dvdt[6:8] = acc2
+
+    return dvdt 
+
+
+def runge_kutta(f, t, h, xn, *f_args, **f_kwargs):
+    xn = np.array(xn)
+    k1 = f(t, xn, *f_args, **f_kwargs)
+    k2 = f(t + h/2, xn + h/2*k1, *f_args, **f_kwargs)
+    k3 = f(t + h/2, xn + h/2*k2, *f_args, **f_kwargs)
+    k4 = f(t + h, xn + h*k3, *f_args, **f_kwargs)
+
+    xn += h/6 * (k1 + 2*k2 + 2*k3 + k4)
+    
+    return xn 
+ 
+# Test case: 
+# Take m1 = 2e30, m2 = 6e24, r = 1.5e11m 
+
+m1 = 2e30
+m2 = 6e24
+r = 1.5e11
+t0 = 0 
+v1 = np.sqrt((G*m2**2)/((m1+m2)*r))
+v2 = np.sqrt((G*m1**2)/((m1+m2)*r))
+print(v1, v2)
+x = [0., 0., 0., -v1, r, 0., 0., v2]
+
+partitions = 100000
+h = (86400*365)/partitions
+
+x1_data = []
+y1_data = []
+x2_data = []
+y2_data = []
+
+t = 0 
+for i in range(partitions):
+    t += h 
+    xt = runge_kutta(rhs, t, h, x, m1, m2)
+    x1_data.append(xt[0])
+    y1_data.append(xt[1])
+    x2_data.append(xt[4])
+    y2_data.append(xt[5])
+
+    x = xt 
+
+
+plt.figure(figsize=(8, 8))
+
+plt.plot(x1_data, y1_data, label="Trajectory of particle 1")
+plt.plot(x2_data, y2_data, label="Trajectory of particle 2")
+
+
+plt.xlabel('x', fontsize=12)
+plt.ylabel('y', fontsize=12)
+plt.title('Positions of bodies 1 and 2')
+plt.axis("equal")
+plt.legend(fontsize=10)
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig(f'./test_rk4.png', dpi=300)
+
+
+
+
+
+
+
+
+
+
+
+
