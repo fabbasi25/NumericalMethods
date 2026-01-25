@@ -30,13 +30,13 @@ def rk_schr(a, b, n, x, filename, corr, m, E, V, *V_args, **V_kwargs):
     x = np.array(x)
     t = a 
     h = (b-a)/n
-    print(h)
+
     psi_vals = []
     x_vals = []
     corr_vals = []
     for i in range(n): 
-        t += h
         xt = runge_kutta(sch_rhs, t, h, x, m, E, V, *V_args, **V_kwargs)
+        t += h
         x = xt 
 
         x_vals.append(t)
@@ -47,7 +47,7 @@ def rk_schr(a, b, n, x, filename, corr, m, E, V, *V_args, **V_kwargs):
 
 
     plt.plot(x_vals, psi_vals, label="numerical $\psi(x)$")
-    # plt.plot(x_vals, corr_vals, label="analytic $\psi(x)$", linestyle="--")
+    plt.plot(x_vals, corr_vals, label="analytic $\psi(x)$", linestyle="--")
 
     plt.xlabel('x', fontsize=12)
     plt.ylabel('$\psi(x)$', fontsize=12)
@@ -58,13 +58,62 @@ def rk_schr(a, b, n, x, filename, corr, m, E, V, *V_args, **V_kwargs):
 
     return x
 
+def rk_isw(E, a, b, n, x, m, V, *V_args, **V_kwargs): 
+    x = np.array(x)
+    t = a 
+    h = (b-a)/n
+
+    for i in range(n): 
+        xt = runge_kutta(sch_rhs, t, h, x, m, E, V, *V_args, **V_kwargs)
+        t += h
+        x = xt 
+
+    return x[0]
+
+def rk_isw_der(E, a, b, n, x, m, V, *V_args, **V_kwargs): 
+    x = np.array(x)
+    t = a 
+    h = (b-a)/n
+
+    for i in range(n): 
+        xt = runge_kutta(sch_rhs, t, h, x, m, E, V, *V_args, **V_kwargs)
+        t += h
+        x = xt 
+
+    return x[1]
+
+
+def find_a (a_max, E, n, x, m, V, *V_args, threshold=1e-5):
+    x0 = 0.01   
+    
+    while x0 <= a_max:
+        a = x0 
+        b = a + 0.001 
+
+        if abs(rk_isw_der(E, -a, 0, n, x, m, V, *V_args)) < threshold: 
+            return a
+
+        if rk_isw_der(E, -a, 0, n, x, m, V, *V_args)*rk_isw_der(E, -b, 0, n, x, m, V, *V_args) < 0: 
+            while abs(a-b) > threshold:
+                mid = (a+b)/2
+                fmid = rk_isw_der(E, -mid, 0, n, x, m, V, *V_args)
+                if fmid == 0: 
+                    break
+                if rk_isw_der(E, -a, 0, n, x, m, V, *V_args)*fmid < 0: 
+                    b = mid 
+                elif rk_isw_der(E, -b, 0, n, x, m, V, *V_args)*fmid < 0:
+                    a = mid 
+
+            return mid 
+        
+        x0 += 0.01 
 
 # Run RK4 for this problem 
 n = 1000
 m = 1
 
 def test_V1(x): return 0 
-def corr1(x, E): return np.sin(np.sqrt(2*E)*x)
+def corr1(x, E): return 3.183098861837903*np.sin(np.sqrt(2*E)*x)
 def test_V2(x, m, w): return m*(w**2)*(x**2)/2
 def corr2_gs(x, E0): 
     w = 2*E0 
@@ -83,34 +132,25 @@ w = 1
 E0 = w/2
 
 x2_init = [0, 1]
-rk_schr(-5, 5, n, x2_init, "sho", corr2_gs, m, E0, test_V2, m, w)
+
+a_ground = find_a(10, E0, n, x2_init, m, test_V2, m, w)
+rk_schr(-a_ground, a_ground, n, x2_init, "sho", corr2_gs, m, E0, test_V2, m, w)
 # Plotting multiples of E0 give excited states of the SHO. 
 
-rk_schr(-5, 5, n, x2_init, "sho_3E", corr2_gs, m, 3*E0, test_V2, m, w)
-rk_schr(-5, 5, n, x2_init, "sho_32E", corr2_gs, m, 3.5*E0, test_V2, m, w)
+rk_schr(-a_ground, a_ground, n, x2_init, "sho_3E", corr2_gs, m, 3*E0, test_V2, m, w)
+rk_schr(-a_ground, a_ground, n, x2_init, "sho_32E", corr2_gs, m, 3.5*E0, test_V2, m, w)
 
-rk_schr(-5, 5, n, x2_init, "sho_5E", corr2_gs, m, 5*E0, test_V2, m, w)
+rk_schr(-a_ground, a_ground, n, x2_init, "sho_5E", corr2_gs, m, 5*E0, test_V2, m, w)
 
 
 ## PROBLEM 2: THE SHOOTING METHOD 
-def rk_isw(E, a, b, n, x, m, V, *V_args, **V_kwargs): 
-    x = np.array(x)
-    t = a 
-    h = (b-a)/n
-
-    for i in range(n): 
-        t += h
-        xt = runge_kutta(sch_rhs, t, h, x, m, E, V, *V_args, **V_kwargs)
-        x = xt 
-
-    return x[0]
 
 w = 1 
 E_vals = np.linspace(0, 3*w, 1000)
 psi_vals = []
 
 for E in E_vals: 
-    psi_vals.append(rk_isw(E, -5, 5, n, [0, 1], m, test_V2, m, w))
+    psi_vals.append(rk_isw(E, -a_ground, a_ground, n, [0, 1], m, test_V2, m, w))
 plt.figure(figsize=(8, 8))
 
 
@@ -151,12 +191,11 @@ def root_finder(Emin, Emax, f, *f_args, threshold=1e-5, **fkwargs):
 
 # shooting method for free system 
 E_min = 0
-E_max = 1.5
+E_max = 31
 
-i_values = [i for i in range(5)]
-correct = [(np.pi**2)/(200)*(i+1)**2 for i in range(5)]
+i_values = [i for i in range(25)]
+correct = [(np.pi**2)/(200)*(i+1)**2 for i in range(25)]
 E_roots = root_finder(E_min, E_max, rk_isw, 0, 10, n, [0, 1], m, test_V1, threshold=1e-10)
-
 
 plt.figure(figsize=(8, 8))
 
@@ -174,10 +213,11 @@ plt.savefig(f'./Homeworks/shooting_zero_free', dpi=300)
 # shooting method for harmonic oscillator 
 
 E_min = 0
-E_max = 5
-i_values = [i for i in range(5)]
-correct = [w/2*(2*i+1) for i in range(5)]
-E_roots = root_finder(E_min, E_max, rk_isw, -5, 5, n, [0, 1], m, test_V2, m, w, threshold=1e-10)
+E_max = 37
+i_values = [i for i in range(25)]
+# will deviate from these values because of the infinite square well 
+correct = [w/2*(2*i+1) for i in range(25)]
+E_roots = root_finder(E_min, E_max, rk_isw, -a_ground, a_ground, n, [0, 1], m, test_V2, m, w, threshold=1e-10)
 
 plt.figure(figsize=(8, 8))
 
